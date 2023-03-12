@@ -89,7 +89,7 @@ async function isValidAddress(toAddress, stringToHash) {
     const blockCount = ethers.BigNumber.from(await faucetContract.blockCount());
     const blockNumForAddr = ethers.BigNumber.from(await faucetContract.blockNumForAddr(faucetWallet.address, toAddress));
     const blockNumForHash = ethers.BigNumber.from(await faucetContract.blockNumForHash(faucetWallet.address, hash));
-    if (blockNumber.sub(blockCount).sub(blockNumForAddr).isNegative || blockNumber.sub(blockCount).sub(blockNumForHash).isNegative) {
+    if ((blockNumber.sub(blockCount).sub(blockNumForAddr)).isNegative() || (blockNumber.sub(blockCount).sub(blockNumForHash)).isNegative()) {
         return {
             result: false,
             message: `Error, cannot be transferred to ${toAddress}. Wait for a while.`,
@@ -106,4 +106,4 @@ module.exports = {
     getWalletBalance: getWalletBalance,
     sendEthToWallet: sendEthToWallet,
     isValidAddress: isValidAddress,
-  }
+}
