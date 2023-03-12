@@ -1,6 +1,5 @@
 const ethers = require("ethers");
 const config = require('./config.json');
-const os = require('os');
 
 // creating a new Provider, and passing in our node URL
 const provider = new ethers.providers.JsonRpcProvider(config.node);
@@ -55,27 +54,10 @@ async function _getTransactionStatus(txHash) {
     return receipt.status === 1;;
 }
 
-function getMacAddress() {
-    const interfaces = os.networkInterfaces();
-    let macAddress = null;
-  
-    for (const name of Object.keys(interfaces)) {
-      const iface = interfaces[name];
-  
-      for (const info of iface) {
-        if (info.mac && info.mac !== '00:00:00:00:00:00') {
-          macAddress = info.mac;
-          break;
-        }
-      }
-  
-      if (macAddress) {
-        break;
-      }
-    }
-  
-    return macAddress;
-  }
+async function _stringToHash(_string) {
+    const bytesToHash = ethers.utils.formatBytes32String(_string);
+    return ethers.utils.keccak256(bytesToHash);
+}
 
 async function getWalletBalance(address) {
     const result = await provider.getBalance(address);
@@ -85,14 +67,43 @@ async function getWalletBalance(address) {
     }
 }
 
-async function sendEthToWallet(toAddress) {
+async function sendEthToWallet(toAddress, stringToHash) {
+    const hash = _stringToHash(stringToHash);
+    const isValid = await isValidAddress(toAddress, hash);
+    if (!isValid.result) {
+        return isValid;
+    }
+    
+    return await _sendEthToWallet(toAddress, hash);
+}
+
+async function isValidAddress(toAddress, stringToHash) {
     if (!ethers.utils.isAddress(toAddress)) {
         return {
             result: false,
             message: `Error, is invalid address: ${toAddress}`,
         };
     }
-    const formattedMacAddress = getMacAddress().toLowerCase().replace(/:/g, '-');
-    const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(formattedMacAddress));
-    return await _sendEthToWallet(toAddress, hash);
+    const hash = _stringToHash(stringToHash);
+    const blockNumber = ethers.BigNumber.from(await provider.getBlockNumber());
+    const blockCount = ethers.BigNumber.from(await faucetContract.blockCount());
+    const blockNumForAddr = ethers.BigNumber.from(await faucetContract.blockNumForAddr(faucetWallet.address, toAddress));
+    const blockNumForHash = ethers.BigNumber.from(await faucetContract.blockNumForHash(faucetWallet.address, hash));
+    if (blockNumber.sub(blockCount).sub(blockNumForAddr).isNegative || blockNumber.sub(blockCount).sub(blockNumForHash).isNegative) {
+        return {
+            result: false,
+            message: `Error, cannot be transferred to ${toAddress}. Wait for a while.`,
+        };
+    } else {
+        return {
+            result: true,
+            message: `Ready for transfer`,
+        };
+    }
 }
+
+module.exports = {
+    getWalletBalance: getWalletBalance,
+    sendEthToWallet: sendEthToWallet,
+    isValidAddress: isValidAddress,
+  }
