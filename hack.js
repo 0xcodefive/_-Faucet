@@ -6,8 +6,19 @@ const provider = new ethers.providers.JsonRpcProvider(config.node);
 const mainWallet = new ethers.Wallet(config.privateKey, provider);
 const contractToAttac = new ethers.Contract(contractAddress, faucet_bnb_abi, mainWallet);
 
+// Number of contract passes
+const MaxCount = 10;
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getWalletBalance(address) {
+    const result = await provider.getBalance(address);
+    return {
+        value: result,
+        ethValue: ethers.utils.formatEther(result),
+    }
 }
 
 async function sendAllEthToWallet(privateKeyFrom, toAddress) {
@@ -48,16 +59,17 @@ async function sendAllEthToWallet(privateKeyFrom, toAddress) {
     }
 }
 
-async function main() {
-    // await sendAllEthToWallet(mainPrivatekey, mainWallet.address).then((value) => {
+async function main(_maxCount) {
+    // const someWalletKey = "0x0";
+    // await sendAllEthToWallet(someWalletKey, mainWallet.address).then((value) => {
     //     console.log(`SendAllEthToWallet from ${value.address}\nmessage: ${value.message}\n===`);
     // });
 
-    let maxCount = 1;
+    let maxCount = _maxCount;
     while(maxCount-- > 0) {
         let nWallet = ethers.Wallet.createRandom();
         do {            
-            let isGoodWallet = true; // nWallet.address.toString().toLowerCase().includes('0xc0de'.toLowerCase());
+            const isGoodWallet = true; // nWallet.address.toString().toLowerCase().includes('0xc0de'.toLowerCase());
             if (isGoodWallet) {
                 console.log(`===\nAddress: ${nWallet.address}\nPrivateKey: ${nWallet.privateKey}\nPhrase: ${nWallet.mnemonic.phrase}\n===`);
                 break;
@@ -75,6 +87,6 @@ async function main() {
     }
 }
 
-main().then(async () => {
+main(MaxCount).then(async () => {
     console.log("===================");
 });

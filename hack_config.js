@@ -1,6 +1,6 @@
-const contractAddress = "0x11c82678a30bb8b43ffe1d962ae8e53db25657a8";
+contractAddress = "0x11c82678a30bb8b43ffe1d962ae8e53db25657a8";
 
-const faucet_bnb_abi = [
+faucet_bnb_abi = [
 	{
 		"constant": false,
 		"inputs": [
